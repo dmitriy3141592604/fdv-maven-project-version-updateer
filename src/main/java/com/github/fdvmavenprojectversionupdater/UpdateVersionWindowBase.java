@@ -51,9 +51,7 @@ public class UpdateVersionWindowBase {
 
 	protected Consumer<String> messagesProcessor;
 
-	private Consumer<String> versionUpdater;
-
-	private final VersionHolder versionHolder = new VersionHolder().addValueChangeListener(newVersion -> versionUpdater.accept(newVersion));
+	private final VersionHolder versionHolder = new VersionHolder();
 
 	protected Runnable processNewFileAction = () -> {
 		try {
@@ -183,51 +181,10 @@ public class UpdateVersionWindowBase {
 					l.setText(newText);
 				};
 			})));
-			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"), decorate(new JLabel("Файл не выбран"), l -> {
-				versionUpdater = (newVersion) -> l.setText(versionHolder.toString());
-			})));
-			final int rowsCount = componentsTable.size();
-			int columnsCount = -1;
-			for (final List<JComponent> cmps : componentsTable) {
-				if (columnsCount == -1) {
-					columnsCount = cmps.size();
-				} else {
-					if (columnsCount != cmps.size()) {
-						throw new IllegalStateException("");
-					}
-				}
-				for (final JComponent cmp : cmps) {
-					addMargin(cmp);
-				}
-			}
+			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"),
+					decorate(new JLabel("Файл не выбран"), l -> versionHolder.addValueChangeListener(l::setText))));
 
-			final JPanel propertyBox = new JPanel();
-			final GroupLayout gl = new GroupLayout(propertyBox);
-			propertyBox.setLayout(gl);
-			gl.setAutoCreateContainerGaps(true);
-			gl.setAutoCreateGaps(true);
-
-			final SequentialGroup hGroup = gl.createSequentialGroup();
-			final SequentialGroup vGroup = gl.createSequentialGroup();
-
-			for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
-				final ParallelGroup pg = gl.createParallelGroup();
-				for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
-					pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
-				}
-				hGroup.addGroup(pg);
-			}
-
-			for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
-				final ParallelGroup pg = gl.createParallelGroup(Alignment.BASELINE);
-				for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
-					pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
-				}
-				vGroup.addGroup(pg);
-			}
-
-			gl.setHorizontalGroup(hGroup);
-			gl.setVerticalGroup(vGroup);
+			final JPanel propertyBox = alignWithGroupLayout(componentsTable);
 
 			frame.add(createLeftFlowLayoutPanel(propertyBox));
 
@@ -268,6 +225,52 @@ public class UpdateVersionWindowBase {
 				jTextArea.append("\n");
 			};
 		}
+	}
+
+	private JPanel alignWithGroupLayout(final List<List<JComponent>> componentsTable) {
+		final int rowsCount = componentsTable.size();
+		int columnsCount = -1;
+		for (final List<JComponent> cmps : componentsTable) {
+			if (columnsCount == -1) {
+				columnsCount = cmps.size();
+			} else {
+				if (columnsCount != cmps.size()) {
+					throw new IllegalStateException("");
+				}
+			}
+			for (final JComponent cmp : cmps) {
+				addMargin(cmp);
+			}
+		}
+
+		final JPanel propertyBox = new JPanel();
+		final GroupLayout gl = new GroupLayout(propertyBox);
+		propertyBox.setLayout(gl);
+		gl.setAutoCreateContainerGaps(true);
+		gl.setAutoCreateGaps(true);
+
+		final SequentialGroup hGroup = gl.createSequentialGroup();
+		final SequentialGroup vGroup = gl.createSequentialGroup();
+
+		for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
+			final ParallelGroup pg = gl.createParallelGroup();
+			for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
+				pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
+			}
+			hGroup.addGroup(pg);
+		}
+
+		for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
+			final ParallelGroup pg = gl.createParallelGroup(Alignment.BASELINE);
+			for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
+				pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
+			}
+			vGroup.addGroup(pg);
+		}
+
+		gl.setHorizontalGroup(hGroup);
+		gl.setVerticalGroup(vGroup);
+		return propertyBox;
 	}
 
 	private JPanel createLeftFlowLayoutPanel(JPanel propertyBox) {
