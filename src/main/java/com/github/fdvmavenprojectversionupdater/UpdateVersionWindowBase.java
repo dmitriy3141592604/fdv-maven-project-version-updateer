@@ -34,7 +34,13 @@ public class UpdateVersionWindowBase {
 
 	private Runnable versionUpdater;
 
-	private VersionHolder versionHolder;
+	private final VersionHolder versionHolder = new VersionHolder() {
+
+		{
+			addValueChangeListener(newVersion -> versionUpdater.run());
+		}
+
+	};
 
 	protected Runnable processNewFileAction = () -> {
 		try {
@@ -42,9 +48,8 @@ public class UpdateVersionWindowBase {
 			processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
 			processor.parse(new FileReader(selectedFile));
 			processor.forNode("/mv:project/mv:version/text()", node -> {
-				processExtractedVersion(parseVersion(node.getNodeValue()));
+				versionHolder.setVersion(node.getNodeValue());
 			});
-			versionUpdater.run();
 		} catch (final Exception e) {
 			messagesProcessor.accept(e.getMessage());
 			if (e instanceof RuntimeException) {
@@ -102,14 +107,6 @@ public class UpdateVersionWindowBase {
 		initializeMenu();
 	}
 
-	private void processExtractedVersion(Object parseVersion) {
-	}
-
-	private VersionHolder parseVersion(String nodeValue) {
-		versionHolder = new VersionHolder(nodeValue);
-		return versionHolder;
-	}
-
 	private void initializeMenu() {
 		final JMenuBar menuBar = new JMenuBar();
 		frame.setJMenuBar(menuBar);
@@ -142,7 +139,6 @@ public class UpdateVersionWindowBase {
 		{
 			final Box fileNamePanel = Box.createHorizontalBox();
 			basePane.add(fileNamePanel);
-			// fileNamePanel.add(Box.createHorizontalGlue());
 			fileNamePanel.add(new JLabel("Имя файла:"));
 			fileNamePanel.add(Box.createHorizontalStrut(7));
 			final JLabel fileNameLabel = new JLabel("Файл не выбран");
@@ -174,43 +170,15 @@ public class UpdateVersionWindowBase {
 					addActionListener(al);
 				};
 			}
-			actionsBox.add(new ActionButton("Увеличить мажорную версию", e -> {
-				versionHolder.incrementMajor();
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Уменьшить мажорную версию", e -> {
-				versionHolder.increment(0, -1);
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Увеличить минорную версию", e -> {
-				versionHolder.incrementMinor();
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Уменьшить минорную версию", e -> {
-				versionHolder.increment(1, -1);
-				;
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Увеличить версию билда", e -> {
-				versionHolder.incrementBuild();
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Уменьшить версию билда", e -> {
-				versionHolder.increment(2, -1);
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Пометить SNAPSHOT", e -> {
-				versionHolder.toSnapshot();
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Пометить RC", e -> {
-				versionHolder.toRC();
-				versionUpdater.run();
-			}));
-			actionsBox.add(new ActionButton("Оставить только версию", e -> {
-				versionHolder.onlyVersion();
-				versionUpdater.run();
-			}));
+			actionsBox.add(new ActionButton("Увеличить мажорную версию", e -> versionHolder.incrementMajor()));
+			actionsBox.add(new ActionButton("Уменьшить мажорную версию", e -> versionHolder.increment(0, -1)));
+			actionsBox.add(new ActionButton("Увеличить минорную версию", e -> versionHolder.incrementMinor()));
+			actionsBox.add(new ActionButton("Уменьшить минорную версию", e -> versionHolder.increment(1, -1)));
+			actionsBox.add(new ActionButton("Увеличить версию билда", e -> versionHolder.incrementBuild()));
+			actionsBox.add(new ActionButton("Уменьшить версию билда", e -> versionHolder.increment(2, -1)));
+			actionsBox.add(new ActionButton("Пометить SNAPSHOT", e -> versionHolder.toSnapshot()));
+			actionsBox.add(new ActionButton("Пометить RC", e -> versionHolder.toRC()));
+			actionsBox.add(new ActionButton("Оставить только версию", e -> versionHolder.onlyVersion()));
 		}
 		{
 			final JTextArea jTextArea = new JTextArea(5, 30);

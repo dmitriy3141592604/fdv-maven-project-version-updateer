@@ -1,34 +1,37 @@
 package com.github.fdvmavenprojectversionupdater;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class VersionHolder {
 
 	private String version;
 
-	public VersionHolder(String version) {
-		this.version = version;
+	private final List<Consumer<String>> valueChangeListeners = new ArrayList<>();
+
+	public VersionHolder() {
 	}
 
 	public VersionHolder incrementMajor() {
-		final int position = 0;
-		final int increment = 1;
-		return increment(position, increment);
+		return increment(0, 1);
+	}
+
+	public VersionHolder incrementMinor() {
+		return increment(1, 1);
+	}
+
+	public VersionHolder incrementBuild() {
+		return increment(2, 1);
 	}
 
 	public VersionHolder increment(int position, int increment) {
 		return updateVersion(sp -> sp[position] = String.valueOf(Integer.valueOf(sp[position]) + increment));
 	}
 
-	public VersionHolder incrementMinor() {
-		return updateVersion(sp -> sp[1] = String.valueOf(Integer.valueOf(sp[1]) + 1));
-	}
-
-	public VersionHolder incrementBuild() {
-		return updateVersion(sp -> sp[2] = String.valueOf(Integer.valueOf(sp[2]) + 1));
-	}
-
-	private VersionHolder updateVersion(final Consumer<String[]> updater) {
+	private VersionHolder updateVersion(Consumer<String[]> updater) {
 		final String[] split = version.split("[-.]");
 		updater.accept(split);
 
@@ -44,8 +47,7 @@ public class VersionHolder {
 			}
 			sb.append(split[i]);
 		}
-		version = sb.toString();
-		return this;
+		return updateVersion(sb.toString());
 	}
 
 	@Override
@@ -53,38 +55,56 @@ public class VersionHolder {
 		return version;
 	}
 
-	public static void main(String... args) {
-		print("", "0.0.1", new VersionHolder("0.0.1").incrementMajor());
-		print("", "0.0.1-SNAPSHOT", new VersionHolder("0.0.1-SNAPSHOT").incrementMajor());
-		print("", "3.2.8", new VersionHolder("3.2.8").incrementMinor());
-		print("", "3.2.8-SNAPSHOT", new VersionHolder("3.2.8-SNAPSHOT").incrementMinor());
-		print("", "3.2.8", new VersionHolder("3.2.8").incrementBuild());
-		print("", "3.2.8-SNAPSHOT", new VersionHolder("3.2.8-SNAPSHOT").incrementBuild());
-		print("", "3.2.8-RC", new VersionHolder("3.2.8-RC").incrementBuild());
-		print("sn", "0.0.2", new VersionHolder("0.0.2").toSnapshot());
-		print("sn", "0.0.2-SNAPSHOT", new VersionHolder("0.0.2-SNAPSHOT").toSnapshot());
-		print("rc", "0.0.2", new VersionHolder("0.0.2").toRC());
-		print("rc", "0.0.2-SNAPSHOT", new VersionHolder("0.0.2-SNAPSHOT").toRC());
-		print("on", "0.0.2", new VersionHolder("0.0.2").onlyVersion());
-		print("on", "0.0.2-SNAPSHOT", new VersionHolder("0.0.2").onlyVersion());
-	}
-
 	public VersionHolder onlyVersion() {
-		version = version.replaceAll("-?[a-zA-Z]*$", "");
-		return this;
+		return replaceTextSuffix("");
 	}
 
 	public VersionHolder toSnapshot() {
-		version = version.replaceAll("-?[a-zA-Z]*$", "") + "-SNAPSHOT";
-		return this;
+		return replaceTextSuffix("-SNAPSHOT");
 	}
 
 	public VersionHolder toRC() {
-		version = version.replaceAll("-?[a-zA-Z]*$", "") + "-RC";
+		return replaceTextSuffix("-RC");
+	}
+
+	private VersionHolder replaceTextSuffix(String replacement) {
+		return updateVersion(version.replaceAll("-?[a-zA-Z]*$", "") + replacement);
+	}
+
+	public void setVersion(String newVersion) {
+		updateVersion(newVersion);
+	}
+
+	private VersionHolder updateVersion(String newVersion) {
+		final String pattern = "\\d+[.]\\d+[.]\\d+(-[a-zA-Z]+)?$";
+		if (newVersion == null) {
+			throw new NullPointerException();
+		}
+		if (!newVersion.matches(pattern)) {
+			throw new IllegalArgumentException("Поддерживаются только версии формата: " + pattern);
+		}
+		if (!Objects.equals(this.version, newVersion)) {
+			this.version = newVersion;
+			fireNewVersionEvent();
+		}
 		return this;
 	}
 
-	private static void print(String marker, String label, VersionHolder vh) {
-		System.out.println(String.format("%-4s %15s -> %s", marker, label, vh.toString()));
+	private void fireNewVersionEvent() {
+		valueChangeListeners.forEach(c -> c.accept(version));
 	}
+
+	public void addValueChangeListener(Consumer<String> consumer) {
+		valueChangeListeners.add(consumer);
+	}
+
+	public void removeValueChangeListener(Consumer<String> consumer) {
+		final Iterator<Consumer<String>> iterator = valueChangeListeners.iterator();
+		while (iterator.hasNext()) {
+			if (iterator.next() == consumer) {
+				iterator.remove();
+			}
+		}
+	}
+
 }
