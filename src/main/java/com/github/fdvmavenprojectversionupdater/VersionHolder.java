@@ -94,8 +94,9 @@ public class VersionHolder {
 		valueChangeListeners.forEach(c -> c.accept(version));
 	}
 
-	public void addValueChangeListener(Consumer<String> consumer) {
+	public VersionHolder addValueChangeListener(Consumer<String> consumer) {
 		valueChangeListeners.add(consumer);
+		return this;
 	}
 
 	public void removeValueChangeListener(Consumer<String> consumer) {

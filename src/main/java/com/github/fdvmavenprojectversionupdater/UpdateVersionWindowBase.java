@@ -51,15 +51,9 @@ public class UpdateVersionWindowBase {
 
 	protected Consumer<String> messagesProcessor;
 
-	private Runnable versionUpdater;
+	private Consumer<String> versionUpdater;
 
-	private final VersionHolder versionHolder = new VersionHolder() {
-
-		{
-			addValueChangeListener(newVersion -> versionUpdater.run());
-		}
-
-	};
+	private final VersionHolder versionHolder = new VersionHolder().addValueChangeListener(newVersion -> versionUpdater.accept(newVersion));
 
 	protected Runnable processNewFileAction = () -> {
 		try {
@@ -113,7 +107,7 @@ public class UpdateVersionWindowBase {
 			processor.forNode("/mv:project/mv:version/text()", node -> {
 				node.setNodeValue(versionHolder.toString());
 			});
-			versionUpdater.run();
+
 			try (FileWriter writer = new FileWriter(selectedFile)) {
 				processor.write(writer);
 			}
@@ -190,7 +184,7 @@ public class UpdateVersionWindowBase {
 				};
 			})));
 			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"), decorate(new JLabel("Файл не выбран"), l -> {
-				versionUpdater = () -> l.setText(versionHolder.toString());
+				versionUpdater = (newVersion) -> l.setText(versionHolder.toString());
 			})));
 			final int rowsCount = componentsTable.size();
 			int columnsCount = -1;
