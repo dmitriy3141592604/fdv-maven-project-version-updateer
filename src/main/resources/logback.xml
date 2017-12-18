@@ -14,11 +14,11 @@
 		</encoder>
 	</appender>
 
-	<logger name="test.swing.layout.spring" level="DEBUG">
+	<logger name="RegistrableNamespaceContext" level="INFO">
 		<appender-ref ref="FILE" />
 	</logger>
 
-	<root level="DEBUG">
+	<root level="INFO">
 		<appender-ref ref="STDOUT" />
 	</root>
 </configuration>

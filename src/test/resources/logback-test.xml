@@ -1,0 +1,30 @@
+<configuration>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%-20logger{0} %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>project-test-log.log</file>
+		<append>false</append>
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS+Z} [%thread] %-5level %logger - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="com.github.fdvmavenprojectversionupdater.ReadVersionTest" level="INFO">
+		<appender-ref ref="FILE" />
+	</logger>
+	<logger name="com.github.fdvmavenprojectversionupdater.RegistrableNamespaceContextTest" level="INFO">
+		<appender-ref ref="FILE" />
+	</logger>
+	<logger name="com.github.fdvmavenprojectversionupdater.ReadVersionTest" level="INFO">
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<root level="INFO">
+		<appender-ref ref="STDOUT" />
+	</root>
+</configuration>
