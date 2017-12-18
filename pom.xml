@@ -11,7 +11,10 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<com.github.type-markup>0.0.2</com.github.type-markup>
-		<fdv.slf4j.logback>0.0.2</fdv.slf4j.logback> </properties> 
+		<fdv.slf4j.logback>0.0.2</fdv.slf4j.logback>
+		<junit.junit.version>4.9</junit.junit.version>
+	</properties>
+	
 	<dependencies>
 
 		<dependency>
@@ -24,6 +27,13 @@
 			<groupId>fdv-slf4j-logback</groupId>
 			<artifactId>fdv-slf4j-logback</artifactId>
 			<version>${fdv.slf4j.logback}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.junit.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 	</dependencies>
