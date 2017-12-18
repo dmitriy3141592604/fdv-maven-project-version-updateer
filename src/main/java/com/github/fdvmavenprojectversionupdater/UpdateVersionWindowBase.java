@@ -16,6 +16,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,18 +118,21 @@ public class UpdateVersionWindowBase {
 				final JMenuItem openMenuItem = new JMenuItem("Open");
 				fileMenu.add(openMenuItem);
 				openMenuItem.addActionListener(openFileAction);
+				openMenuItem.setAccelerator(KeyStroke.getKeyStroke("control O"));
 
 			}
 			{
 				final JMenuItem saveMenuItem = new JMenuItem("Save");
 				fileMenu.add(saveMenuItem);
 				saveMenuItem.addActionListener(saveFileAction);
+				saveMenuItem.setAccelerator(KeyStroke.getKeyStroke("control S"));
 			}
 			fileMenu.addSeparator();
 			{
 				final JMenuItem exitMenu = new JMenuItem("Exit");
 				fileMenu.add(exitMenu);
 				exitMenu.addActionListener(exitAction);
+				exitMenu.setAccelerator(KeyStroke.getKeyStroke("control Q"));
 			}
 		}
 	}
