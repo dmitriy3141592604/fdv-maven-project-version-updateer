@@ -1,22 +1,40 @@
 package com.github.fdvmavenprojectversionupdater;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.GroupLayout.ParallelGroup;
+import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +118,7 @@ public class UpdateVersionWindowBase {
 				processor.write(writer);
 			}
 
-			messagesProcessor.accept("Файл " + selectedFile.toString() + "записан");
+			messagesProcessor.accept("Файл " + selectedFile.toString() + " записан");
 
 		} catch (final Exception exception) {
 			messagesProcessor.accept(exception.getMessage());
@@ -146,36 +164,81 @@ public class UpdateVersionWindowBase {
 				exitMenu.setAccelerator(KeyStroke.getKeyStroke("control Q"));
 			}
 		}
+		{
+			final JMenu viewMenu = new JMenu("View");
+			menuBar.add(viewMenu);
+			{
+				final JMenuItem packMenuItem = new JMenuItem("Pack");
+				viewMenu.add(packMenuItem);
+				packMenuItem.addActionListener(e -> frame.pack());
+			}
+
+		}
 	}
 
 	protected void alignComponents() {
 		final Box basePane = Box.createVerticalBox();
 		frame.add(basePane);
+
 		{
-			final Box fileNamePanel = Box.createHorizontalBox();
-			basePane.add(fileNamePanel);
-			fileNamePanel.add(new JLabel("Имя файла:"));
-			fileNamePanel.add(Box.createHorizontalStrut(7));
-			final JLabel fileNameLabel = new JLabel("Файл не выбран");
-			fileNamePanel.add(fileNameLabel);
-			fileNameUpdater = newText -> fileNameLabel.setText(newText);
-			fileNamePanel.add(Box.createHorizontalStrut(10));
+			final List<List<JComponent>> componentsTable = new ArrayList<>();
+			componentsTable.add(Arrays.asList(new JLabel("Имя файла"), decorate(new JLabel("Файл не выбран"), l -> {
+				fileNameUpdater = newText -> {
+					l.setToolTipText(newText);
+					newText = newText.replaceFirst(".*[/\\\\]([^/\\\\]+)$", "$1");
+					l.setText(newText);
+				};
+			})));
+			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"), decorate(new JLabel("Файл не выбран"), l -> {
+				versionUpdater = () -> l.setText(versionHolder.toString());
+			})));
+			final int rowsCount = componentsTable.size();
+			int columnsCount = -1;
+			for (final List<JComponent> cmps : componentsTable) {
+				if (columnsCount == -1) {
+					columnsCount = cmps.size();
+				} else {
+					if (columnsCount != cmps.size()) {
+						throw new IllegalStateException("");
+					}
+				}
+				for (final JComponent cmp : cmps) {
+					addMargin(cmp);
+				}
+			}
+
+			final JPanel propertyBox = new JPanel();
+			final GroupLayout gl = new GroupLayout(propertyBox);
+			propertyBox.setLayout(gl);
+			gl.setAutoCreateContainerGaps(true);
+			gl.setAutoCreateGaps(true);
+
+			final SequentialGroup hGroup = gl.createSequentialGroup();
+			final SequentialGroup vGroup = gl.createSequentialGroup();
+
+			for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
+				final ParallelGroup pg = gl.createParallelGroup();
+				for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
+					pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
+				}
+				hGroup.addGroup(pg);
+			}
+
+			for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
+				final ParallelGroup pg = gl.createParallelGroup(Alignment.BASELINE);
+				for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
+					pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
+				}
+				vGroup.addGroup(pg);
+			}
+
+			gl.setHorizontalGroup(hGroup);
+			gl.setVerticalGroup(vGroup);
+
+			frame.add(createLeftFlowLayoutPanel(propertyBox));
+
 		}
 		{
-			final Box versionPanel = Box.createHorizontalBox();
-			basePane.add(versionPanel);
-
-			versionPanel.add(new JLabel("Текущая версия: "));
-			versionPanel.add(Box.createHorizontalStrut(7));
-			final JLabel versionLabel = new JLabel();
-			versionPanel.add(versionLabel);
-			versionUpdater = () -> versionLabel.setText(versionHolder.toString());
-
-		}
-		{
-			final Box actionsBox = Box.createVerticalBox();
-			frame.add(actionsBox, BorderLayout.WEST);
-
 			class ActionButton extends JButton {
 
 				private static final long serialVersionUID = 1L;
@@ -183,27 +246,57 @@ public class UpdateVersionWindowBase {
 				public ActionButton(String label, ActionListener al) {
 					setText(label);
 					addActionListener(al);
+					setHorizontalAlignment(SwingConstants.LEFT);
 				};
 			}
-			actionsBox.add(new ActionButton("Увеличить мажорную версию", e -> versionHolder.incrementMajor()));
-			actionsBox.add(new ActionButton("Уменьшить мажорную версию", e -> versionHolder.increment(0, -1)));
-			actionsBox.add(new ActionButton("Увеличить минорную версию", e -> versionHolder.incrementMinor()));
-			actionsBox.add(new ActionButton("Уменьшить минорную версию", e -> versionHolder.increment(1, -1)));
-			actionsBox.add(new ActionButton("Увеличить версию билда", e -> versionHolder.incrementBuild()));
-			actionsBox.add(new ActionButton("Уменьшить версию билда", e -> versionHolder.increment(2, -1)));
-			actionsBox.add(new ActionButton("Пометить SNAPSHOT", e -> versionHolder.toSnapshot()));
-			actionsBox.add(new ActionButton("Пометить RC", e -> versionHolder.toRC()));
-			actionsBox.add(new ActionButton("Оставить только версию", e -> versionHolder.onlyVersion()));
+
+			final List<ActionButton> actionButtons = new ArrayList<>();
+			actionButtons.add(new ActionButton("Увеличить мажорную версию", e -> versionHolder.incrementMajor()));
+			actionButtons.add(new ActionButton("Уменьшить мажорную версию", e -> versionHolder.increment(0, -1)));
+			actionButtons.add(new ActionButton("Увеличить минорную версию", e -> versionHolder.incrementMinor()));
+			actionButtons.add(new ActionButton("Уменьшить минорную версию", e -> versionHolder.increment(1, -1)));
+			actionButtons.add(new ActionButton("Увеличить версию билда", e -> versionHolder.incrementBuild()));
+			actionButtons.add(new ActionButton("Уменьшить версию билда", e -> versionHolder.increment(2, -1)));
+			actionButtons.add(new ActionButton("Пометить SNAPSHOT", e -> versionHolder.toSnapshot()));
+			actionButtons.add(new ActionButton("Пометить RC", e -> versionHolder.toRC()));
+			actionButtons.add(new ActionButton("Оставить только версию", e -> versionHolder.onlyVersion()));
+
+			final JPanel actionsBox = new JPanel(new GridLayout(actionButtons.size(), 1, 1, 1));
+			actionButtons.forEach(b -> actionsBox.add(addMargin(b)));
+			frame.add(new JScrollPane(createLeftFlowLayoutPanel(actionsBox)), BorderLayout.WEST);
 		}
 		{
 			final JTextArea jTextArea = new JTextArea(5, 30);
-			frame.add(jTextArea, BorderLayout.SOUTH);
+			frame.add(new JScrollPane(jTextArea), BorderLayout.SOUTH);
 			jTextArea.setEditable(false);
 			messagesProcessor = newMessage -> {
 				jTextArea.append(newMessage);
 				jTextArea.append("\n");
 			};
 		}
+	}
+
+	private JPanel createLeftFlowLayoutPanel(JPanel propertyBox) {
+		final JPanel bx = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		addBorder(propertyBox, bx);
+		return bx;
+	}
+
+	private void addBorder(JPanel propertyBox, final JPanel bx) {
+		bx.add(propertyBox);
+		bx.setBorder(BorderFactory.createCompoundBorder(bx.getBorder(), BorderFactory.createEtchedBorder()));
+	}
+
+	private <T> T decorate(T t, Consumer<T> consumer) {
+		consumer.accept(t);
+		return t;
+	}
+
+	private Component addMargin(JComponent jLabel) {
+		final Border border = jLabel.getBorder();
+		final EmptyBorder margin = new EmptyBorder(2, 2, 2, 2);
+		jLabel.setBorder(new CompoundBorder(border, margin));
+		return jLabel;
 	}
 
 }
