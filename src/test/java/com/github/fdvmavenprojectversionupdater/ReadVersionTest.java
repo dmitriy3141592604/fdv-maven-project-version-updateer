@@ -3,9 +3,9 @@ package com.github.fdvmavenprojectversionupdater;
 import static org.junit.Assert.assertEquals;
 
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -16,7 +16,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.junit.Test;
@@ -35,7 +34,7 @@ public class ReadVersionTest {
 
 		final InputStream inputStream = getResourceInputStream();
 
-		final Document document = asDomDocument(inputStream);
+		final Document document = asDomDocument(new InputStreamReader(inputStream, "utf-8"));
 
 		final String documentStringWithOriginalVersion = domDocumentAsString(document);
 
@@ -60,16 +59,15 @@ public class ReadVersionTest {
 
 	}
 
-	private NodeList getNodeListByXPath(final Document document, String xPathString) throws XPathExpressionException {
+	private NodeList getNodeListByXPath(Document document, String xPathString) throws Exception {
 		final XPathFactory xPathFactory = XPathFactory.newInstance();
 		final XPath xPath = xPathFactory.newXPath();
-		final Map<String, String> namespaceMap = new HashMap<String, String>();
 
-		xPath.setNamespaceContext(newNamespaceContext(namespaceMap));
+		xPath.setNamespaceContext(newNamespaceContext());
 		return (NodeList) xPath.evaluate(xPathString, document, XPathConstants.NODESET);
 	}
 
-	private RegistrableNamespaceContext newNamespaceContext(Map<String, String> namespaceMap) {
+	private RegistrableNamespaceContext newNamespaceContext() {
 		final RegistrableNamespaceContext namespaceContext = RegistrableNamespaceContext.newInstance();
 		namespaceContext.registerNamespaceToPrefix("http://maven.apache.org/POM/4.0.0", "m");
 		return namespaceContext;
@@ -79,17 +77,15 @@ public class ReadVersionTest {
 		return getClass().getClassLoader().getResourceAsStream("com/github/fdvmavenprojectversionupdater/passed-self-pom.xml");
 	}
 
-	private Document asDomDocument(InputStream inputStream) throws Exception {
+	private Document asDomDocument(Reader reader) throws Exception {
 		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setNamespaceAware(true);
 		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-		final Document document = documentBuilder.parse(new InputSource(inputStream));
-		return document;
+		return documentBuilder.parse(new InputSource(reader));
 	}
 
 	private String domDocumentAsString(Document document) throws Exception {
 		final TransformerFactory transformerFactory = TransformerFactory.newInstance();
-		// transformerFactory.setFeature(XMLConstants., value);
 		final Transformer transformer = transformerFactory.newTransformer();
 		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 		final StringWriter out = new StringWriter();
