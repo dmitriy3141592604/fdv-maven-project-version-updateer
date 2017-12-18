@@ -39,7 +39,7 @@ public class UpdateVersionWindow extends UpdateVersionWindowBase implements Runn
 	private void configureFrame() {
 		frame.setTitle("Обновление версии pom.xml");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setBounds(200, 200, 600, 400);
+		frame.setBounds(200, 200, 700, 500);
 	}
 
 }

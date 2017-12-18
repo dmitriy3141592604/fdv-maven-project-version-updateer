@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>fdv-maven-project-version-updateer</groupId>
 	<artifactId>fdv-maven-project-version-updateer</artifactId>
-	<version>1.2.5</version>
+	<version>1.2.5-SNAPSHOT</version>
 	<name>Maven project version updater</name>
 	<description>Утилита для обновления версии мавеновского проекта</description>
 
