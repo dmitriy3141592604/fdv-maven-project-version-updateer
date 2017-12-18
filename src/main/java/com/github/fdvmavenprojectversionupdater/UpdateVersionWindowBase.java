@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateVersionWindowBase {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected JFrame frame = new JFrame();
 
@@ -60,19 +60,30 @@ public class UpdateVersionWindowBase {
 		}
 	};
 
+	protected File searchDir;
+
 	private final ActionListener openFileAction = e -> {
 		logger.debug("Start opening dialog");
 		final JFileChooser c = new JFileChooser();
-		// FIXME Захардкоженая директория
-		c.setCurrentDirectory(new File("c:\\Users\\User\\git\\fdv-maven-project-version-updateer"));
+		if (searchDir == null) {
+			searchDir = new File(System.getProperty("user.dir"));
+		}
+		if (searchDir.exists() && searchDir.isDirectory()) {
+			c.setCurrentDirectory(searchDir);
+		}
 		final int selectFileResult = c.showDialog(frame, "Open");
 		if (selectFileResult == JFileChooser.APPROVE_OPTION) {
 			selectedFile = c.getSelectedFile();
-			logger.debug("File: {} selected", selectedFile.toString());
-			fileNameUpdater.accept(selectedFile.toString());
-			processNewFileAction.run();
+			processSelectedFile();
 		}
 	};
+
+	protected void processSelectedFile() {
+		searchDir = new File(selectedFile.getParent());
+		logger.debug("File: {} selected", selectedFile.toString());
+		fileNameUpdater.accept(selectedFile.toString());
+		processNewFileAction.run();
+	}
 
 	private final ActionListener saveFileAction = e -> {
 		try {
