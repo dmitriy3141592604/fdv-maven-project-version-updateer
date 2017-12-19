@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory;
 
 public class OpenFileAction implements ActionListener {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final JFileChooser fileChooser = new JFileChooser();
+	private JFileChooser fileChooser = new JFileChooser();
 
 	private final ConsumerList<File> selectedFileListeners = new ConsumerList<File>();
 
@@ -21,7 +21,7 @@ public class OpenFileAction implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if (fileChooser.showDialog(null, null) == JFileChooser.APPROVE_OPTION) {
 			final File selectedFile = fileChooser.getSelectedFile();
-			logger.debug("OpenFileDialog approve file: [{}]", selectedFile);
+			logger.info("OpenFileDialog approve file: [{}]", selectedFile);
 			selectedFileListeners.fire(selectedFile);
 		}
 	}
@@ -32,6 +32,14 @@ public class OpenFileAction implements ActionListener {
 
 	public void setCurrentDirectory(File file) {
 		this.fileChooser.setCurrentDirectory(file);
+	}
+
+	public void setFileChooser(JFileChooser fileChooser) {
+		this.fileChooser = fileChooser;
+	}
+
+	public void setLogger(Logger logger) {
+		this.logger = logger;
 	}
 
 }

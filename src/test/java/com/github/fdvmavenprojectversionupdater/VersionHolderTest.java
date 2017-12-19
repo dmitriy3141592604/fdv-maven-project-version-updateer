@@ -115,13 +115,13 @@ public class VersionHolderTest extends VersionHolderTestBase {
 		vh.setVersion("4.5.7");
 		vh.setVersion("4.5.7");
 
-		assertEquals("called(4.5.7)", callLog());
+		assertEquals("MSG:called(4.5.7)", callLog());
 
 		vh.removeValueChangeListener(consumer);
 
 		vh.setVersion("1.2.3");
 
-		assertEquals("Новых сообщений нет", "called(4.5.7)", callLog());
+		assertEquals("Новых сообщений нет", "MSG:called(4.5.7)", callLog());
 	}
 
 	@Test(expected = NullPointerException.class)
