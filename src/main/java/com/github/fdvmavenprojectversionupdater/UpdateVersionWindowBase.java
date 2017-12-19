@@ -4,10 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +18,6 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -39,97 +36,81 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 
 	private final UpdateVersionController controller = new UpdateVersionController();
 
-	protected JFrame frame = new JFrame();
+	private final JFrame frame = new JFrame();
 
-	protected Consumer<String> messagesProcessor;
+	private final Consumer<String> messagesProcessor;
 
 	private final VersionHolder versionHolder = new VersionHolder();
 
-	final JFileChooser fileChooser = new JFileChooser();
+	private final JLabel showSelectedFileLabel = new JLabel("Файл не выбран");
 
-	final JLabel showSelectedFileLabel = new JLabel("Файл не выбран");
-
-	final JLabel showExtractedVersionLabel = new JLabel("Файл не выбран");
+	private final JLabel showExtractedVersionLabel = new JLabel("Файл не выбран");
 
 	private final JTextArea loggingTextArea = new JTextArea(5, 30);
 
-	private final ActionListener openFileAction = e -> {
-		final int selectFileResult = fileChooser.showDialog(frame, "Open");
-		if (selectFileResult == JFileChooser.APPROVE_OPTION) {
-			final File selectedFile = fileChooser.getSelectedFile();
-			logger.debug("File: {} selected", selectedFile.toString());
-			controller.setFile(selectedFile);
-		}
-	};
+	private final OpenFileAction openFileAction = new OpenFileAction();
 
-	private final ActionListener saveFileAction = e -> {
-		try {
-			final NodeListProcessor processor = new NodeListProcessor();
-			processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
-			try (FileReader reader = new FileReader(controller.getSelectedFile())) {
-				processor.parse(reader);
-			}
-			processor.forNode("/mv:project/mv:version/text()", node -> {
-				node.setNodeValue(versionHolder.toString());
-			});
+	private final SaveFileAction saveFileAction = new SaveFileAction();
 
-			try (FileWriter writer = new FileWriter(controller.getSelectedFile())) {
-				processor.write(writer);
-			}
+	private final ExitAction exitAction = new ExitAction();
 
-			messagesProcessor.accept("File: [" + controller.getSelectedFile() + "] сохранен с версией: [" + versionHolder.toString() + "]");
-		} catch (
-
-		final Exception exception) {
-			if (exception instanceof RuntimeException) {
-				throw (RuntimeException) exception;
-			}
-			throw new RuntimeException(exception);
-		}
-	};
-
-	private final ActionListener exitAction = e -> {
-		System.exit(0);
-	};
-
-	private final ActionListener packAction = e -> frame.pack();
+	private final PackAction packAction = new PackAction();
 
 	protected UpdateVersionWindowBase(String[] args) {
+
 		messagesProcessor = newMessage -> {
 			loggingTextArea.append(newMessage);
 			loggingTextArea.append("\n");
 		};
 
-		controller.getSearchDirectoryListeners().register(file -> fileChooser.setCurrentDirectory(file));
-		controller.getSearchDirectoryListeners().register(file -> logger.info("New search directory: [{}]", file.getAbsolutePath()));
+		controller.getSearchDirectoryListeners().register(openFileAction::setCurrentDirectory);
+		controller.getSearchDirectoryListeners().register(this::logNewSearchDirectory);
 
-		controller.getSourceFileNameListeners().register(file -> logger.info("New source file: [{}]", file.getAbsolutePath()));
-		controller.getSourceFileNameListeners().register(file -> {
-			try {
-				final NodeListProcessor processor = new NodeListProcessor();
-				processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
-				processor.parse(new FileReader(file));
-				processor.forNode("/mv:project/mv:version/text()", node -> {
-					versionHolder.setVersion(node.getNodeValue());
-				});
-			} catch (final Exception e) {
-				messagesProcessor.accept(e.getMessage());
-				if (e instanceof RuntimeException) {
-					throw (RuntimeException) e;
-				}
-				throw new RuntimeException(e);
-			}
-		});
-		controller.getSourceFileNameListeners().register(file -> {
-			showSelectedFileLabel.setToolTipText(file.getAbsolutePath());
-			showSelectedFileLabel.setText(file.getAbsolutePath().replaceFirst(".*[/\\\\]([^/\\\\]+)$", "$1"));
-		});
+		controller.getSourceFileNameListeners().register(this::logNewSourceFile);
+		controller.getSourceFileNameListeners().register(this::extractVersionFromSourceFile);
+		controller.getSourceFileNameListeners().register(this::updateSelectedFileLabel);
 
 		controller.getSourceFileNameListeners().register(file -> messagesProcessor.accept("Открыт файл: [{" + file.getAbsolutePath() + "}]"));
 
 		versionHolder.addValueChangeListener(showExtractedVersionLabel::setText);
+		versionHolder.addValueChangeListener(saveFileAction::setVersion);
+
+		openFileAction.getSelectedFileListeners().register(controller::setFile);
+		openFileAction.getSelectedFileListeners().register(saveFileAction::setSelectedFile);
+
+		packAction.getPackAcctionListeners().register(frame::pack);
 
 		controller.setArgs(args);
+	}
+
+	private void updateSelectedFileLabel(File file) {
+		showSelectedFileLabel.setToolTipText(file.getAbsolutePath());
+		showSelectedFileLabel.setText(file.getAbsolutePath().replaceFirst(".*[/\\\\]([^/\\\\]+)$", "$1"));
+	}
+
+	private void extractVersionFromSourceFile(File file) {
+		try {
+			final NodeListProcessor processor = new NodeListProcessor();
+			processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
+			processor.parse(new FileReader(file));
+			processor.forNode("/mv:project/mv:version/text()", node -> {
+				versionHolder.setVersion(node.getNodeValue());
+			});
+		} catch (final Exception e) {
+			messagesProcessor.accept(e.getMessage());
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void logNewSourceFile(File file) {
+		logger.info("New source file: [{}]", file.getAbsolutePath());
+	}
+
+	private void logNewSearchDirectory(File file) {
+		logger.info("New search directory: [{}]", file.getAbsolutePath());
 	}
 
 	@Override
