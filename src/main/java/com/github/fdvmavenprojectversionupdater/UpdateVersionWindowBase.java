@@ -23,13 +23,9 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.KeyStroke;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -145,42 +141,21 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 	}
 
 	protected void initializeMenu() {
-		final JMenuBar menuBar = new JMenuBar();
-		frame.setJMenuBar(menuBar);
-		{
-			final JMenu fileMenu = new JMenu("File");
-			menuBar.add(fileMenu);
-			{
-				final JMenuItem openMenuItem = new JMenuItem("Open");
-				fileMenu.add(openMenuItem);
-				openMenuItem.addActionListener(openFileAction);
-				openMenuItem.setAccelerator(KeyStroke.getKeyStroke("control O"));
+		frame.setJMenuBar(new ConfigurableMenuBar(menuBar -> {
 
-			}
-			{
-				final JMenuItem saveMenuItem = new JMenuItem("Save");
-				fileMenu.add(saveMenuItem);
-				saveMenuItem.addActionListener(saveFileAction);
-				saveMenuItem.setAccelerator(KeyStroke.getKeyStroke("control S"));
-			}
-			fileMenu.addSeparator();
-			{
-				final JMenuItem exitMenu = new JMenuItem("Exit");
-				fileMenu.add(exitMenu);
-				exitMenu.addActionListener(exitAction);
-				exitMenu.setAccelerator(KeyStroke.getKeyStroke("control Q"));
-			}
-		}
-		{
-			final JMenu viewMenu = new JMenu("View");
-			menuBar.add(viewMenu);
-			{
-				final JMenuItem packMenuItem = new JMenuItem("Pack");
-				viewMenu.add(packMenuItem);
-				packMenuItem.addActionListener(packAction);
-			}
+			menuBar.add("File", menu -> {
+				menu.add("Open", openFileAction, "control O");
+				menu.add("Save", saveFileAction, "control S");
+				menu.addSeparator();
+				menu.add("Exit", exitAction, "control Q");
+			});
 
-		}
+			menuBar.add("View", menu -> {
+				menu.add("Pack", packAction, "control shift P");
+			});
+
+		}));
+
 	}
 
 	protected void alignComponents() {
