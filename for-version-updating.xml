@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>fdv-maven-project-version-updateer</groupId>
 	<artifactId>fdv-maven-project-version-updateer</artifactId>
-	<version>4.3.3-SNAPSHOT</version>
+	<version>4.3.3-RC</version>
 	<name>Maven project version updater</name>
 	<description>Утилита для обновления версии мавеновского проекта</description>
 

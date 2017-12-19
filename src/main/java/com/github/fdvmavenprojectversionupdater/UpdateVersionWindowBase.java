@@ -2,33 +2,27 @@ package com.github.fdvmavenprojectversionupdater;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import javax.swing.BorderFactory;
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.GroupLayout.ParallelGroup;
-import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.fdv.borders.MarginBorderDecorator;
+import com.github.fdv.models.ComponentsTable;
+import com.github.fdv.panels.ConfigurableLeftFlowLayoutPanel;
 
 public class UpdateVersionWindowBase implements Supplier<JFrame> {
 
@@ -141,12 +135,12 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 
 	protected void alignComponents() {
 		{
-			final List<List<JComponent>> componentsTable = new ArrayList<>();
+			final ComponentsTable componentsTable = new ComponentsTable();
 
-			componentsTable.add(Arrays.asList(new JLabel("Имя файла"), showSelectedFileLabel));
-			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"), showExtractedVersionLabel));
+			componentsTable.add(new JLabel("Имя файла"), showSelectedFileLabel);
+			componentsTable.add(new JLabel("Текущая версия"), showExtractedVersionLabel);
 
-			frame.add(createLeftFlowLayoutPanel(alignWithGroupLayout(componentsTable)));
+			frame.add(alignWithLeftFlowLayoutPanel(alignWithGroupLayout(componentsTable)));
 		}
 		{
 
@@ -163,7 +157,7 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 
 			final JPanel actionsBox = new JPanel(new GridLayout(actionButtons.size(), 1, 1, 1));
 			actionButtons.forEach(b -> actionsBox.add(addMargin(b)));
-			frame.add(new JScrollPane(createLeftFlowLayoutPanel(actionsBox)), BorderLayout.WEST);
+			frame.add(new JScrollPane(alignWithLeftFlowLayoutPanel(actionsBox)), BorderLayout.WEST);
 		}
 		{
 
@@ -172,68 +166,17 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 		}
 	}
 
-	private JPanel alignWithGroupLayout(final List<List<JComponent>> componentsTable) {
-		final int rowsCount = componentsTable.size();
-		int columnsCount = -1;
-		for (final List<JComponent> cmps : componentsTable) {
-			if (columnsCount == -1) {
-				columnsCount = cmps.size();
-			} else {
-				if (columnsCount != cmps.size()) {
-					throw new IllegalStateException("");
-				}
-			}
-			for (final JComponent cmp : cmps) {
-				addMargin(cmp);
-			}
-		}
-
-		final JPanel propertyBox = new JPanel();
-		final GroupLayout gl = new GroupLayout(propertyBox);
-		propertyBox.setLayout(gl);
-		gl.setAutoCreateContainerGaps(true);
-		gl.setAutoCreateGaps(true);
-
-		final SequentialGroup hGroup = gl.createSequentialGroup();
-		final SequentialGroup vGroup = gl.createSequentialGroup();
-
-		for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
-			final ParallelGroup pg = gl.createParallelGroup();
-			for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
-				pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
-			}
-			hGroup.addGroup(pg);
-		}
-
-		for (int rowIndex = 0; rowIndex < rowsCount; ++rowIndex) {
-			final ParallelGroup pg = gl.createParallelGroup(Alignment.BASELINE);
-			for (int columnIndex = 0; columnIndex < columnsCount; ++columnIndex) {
-				pg.addComponent(componentsTable.get(rowIndex).get(columnIndex));
-			}
-			vGroup.addGroup(pg);
-		}
-
-		gl.setHorizontalGroup(hGroup);
-		gl.setVerticalGroup(vGroup);
-		return propertyBox;
+	private JPanel alignWithGroupLayout(ComponentsTable componentsTable) {
+		return new GroupPanelFromComponentsTableBuilder().componentsTable(componentsTable).build();
 	}
 
-	private JPanel createLeftFlowLayoutPanel(JPanel propertyBox) {
-		final JPanel bx = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		addBorder(propertyBox, bx);
-		return bx;
+	private JPanel alignWithLeftFlowLayoutPanel(JPanel propertyBox) {
+		return new ConfigurableLeftFlowLayoutPanel(addMargin(propertyBox));
 	}
 
-	private void addBorder(JPanel propertyBox, final JPanel bx) {
-		bx.add(propertyBox);
-		bx.setBorder(BorderFactory.createCompoundBorder(bx.getBorder(), BorderFactory.createEtchedBorder()));
-	}
+	private Component addMargin(Component component) {
+		return new MarginBorderDecorator().decorate(component);
 
-	private Component addMargin(JComponent jLabel) {
-		final Border border = jLabel.getBorder();
-		final EmptyBorder margin = new EmptyBorder(2, 2, 2, 2);
-		jLabel.setBorder(new CompoundBorder(border, margin));
-		return jLabel;
 	}
 
 	protected void configureFrame() {
