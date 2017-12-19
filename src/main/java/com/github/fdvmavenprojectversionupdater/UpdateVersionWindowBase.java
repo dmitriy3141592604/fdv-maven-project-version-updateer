@@ -12,14 +12,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -31,7 +30,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -39,81 +37,54 @@ import javax.swing.border.EmptyBorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateVersionWindowBase {
+public class UpdateVersionWindowBase implements Supplier<JFrame> {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+	private final UpdateVersionController controller = new UpdateVersionController();
+
 	protected JFrame frame = new JFrame();
-
-	protected File selectedFile;
-
-	protected Consumer<String> fileNameUpdater;
 
 	protected Consumer<String> messagesProcessor;
 
 	private final VersionHolder versionHolder = new VersionHolder();
 
-	protected Runnable processNewFileAction = () -> {
-		try {
-			final NodeListProcessor processor = new NodeListProcessor();
-			processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
-			processor.parse(new FileReader(selectedFile));
-			processor.forNode("/mv:project/mv:version/text()", node -> {
-				versionHolder.setVersion(node.getNodeValue());
-			});
-		} catch (final Exception e) {
-			messagesProcessor.accept(e.getMessage());
-			if (e instanceof RuntimeException) {
-				throw (RuntimeException) e;
-			}
-			throw new RuntimeException(e);
-		}
-	};
+	final JFileChooser fileChooser = new JFileChooser();
 
-	protected File searchDir;
+	final JLabel showSelectedFileLabel = new JLabel("Файл не выбран");
+
+	final JLabel showExtractedVersionLabel = new JLabel("Файл не выбран");
+
+	private final JTextArea loggingTextArea = new JTextArea(5, 30);
 
 	private final ActionListener openFileAction = e -> {
-		logger.debug("Start opening dialog");
-		final JFileChooser c = new JFileChooser();
-		if (searchDir == null) {
-			searchDir = new File(System.getProperty("user.dir"));
-		}
-		if (searchDir.exists() && searchDir.isDirectory()) {
-			c.setCurrentDirectory(searchDir);
-		}
-		final int selectFileResult = c.showDialog(frame, "Open");
+		final int selectFileResult = fileChooser.showDialog(frame, "Open");
 		if (selectFileResult == JFileChooser.APPROVE_OPTION) {
-			selectedFile = c.getSelectedFile();
-			processSelectedFile();
+			final File selectedFile = fileChooser.getSelectedFile();
+			logger.debug("File: {} selected", selectedFile.toString());
+			controller.setFile(selectedFile);
 		}
 	};
-
-	protected void processSelectedFile() {
-		searchDir = new File(selectedFile.getParent());
-		logger.debug("File: {} selected", selectedFile.toString());
-		fileNameUpdater.accept(selectedFile.toString());
-		processNewFileAction.run();
-	}
 
 	private final ActionListener saveFileAction = e -> {
 		try {
 			final NodeListProcessor processor = new NodeListProcessor();
 			processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
-			try (FileReader reader = new FileReader(selectedFile)) {
+			try (FileReader reader = new FileReader(controller.getSelectedFile())) {
 				processor.parse(reader);
 			}
 			processor.forNode("/mv:project/mv:version/text()", node -> {
 				node.setNodeValue(versionHolder.toString());
 			});
 
-			try (FileWriter writer = new FileWriter(selectedFile)) {
+			try (FileWriter writer = new FileWriter(controller.getSelectedFile())) {
 				processor.write(writer);
 			}
 
-			messagesProcessor.accept("Файл " + selectedFile.toString() + " записан");
+			messagesProcessor.accept("File: [" + controller.getSelectedFile() + "] сохранен с версией: [" + versionHolder.toString() + "]");
+		} catch (
 
-		} catch (final Exception exception) {
-			messagesProcessor.accept(exception.getMessage());
+		final Exception exception) {
 			if (exception instanceof RuntimeException) {
 				throw (RuntimeException) exception;
 			}
@@ -125,11 +96,55 @@ public class UpdateVersionWindowBase {
 		System.exit(0);
 	};
 
-	protected void initializaComponents() {
-		initializeMenu();
+	private final ActionListener packAction = e -> frame.pack();
+
+	protected UpdateVersionWindowBase(String[] args) {
+		messagesProcessor = newMessage -> {
+			loggingTextArea.append(newMessage);
+			loggingTextArea.append("\n");
+		};
+
+		controller.addSearchDirectoryListener(file -> fileChooser.setCurrentDirectory(file));
+		controller.addSearchDirectoryListener(file -> logger.info("New search directory: [{}]", file.getAbsolutePath()));
+
+		controller.addSourceFileListener(file -> logger.info("New source file: [{}]", file.getAbsolutePath()));
+		controller.addSourceFileListener(file -> {
+			try {
+				final NodeListProcessor processor = new NodeListProcessor();
+				processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
+				processor.parse(new FileReader(file));
+				processor.forNode("/mv:project/mv:version/text()", node -> {
+					versionHolder.setVersion(node.getNodeValue());
+				});
+			} catch (final Exception e) {
+				messagesProcessor.accept(e.getMessage());
+				if (e instanceof RuntimeException) {
+					throw (RuntimeException) e;
+				}
+				throw new RuntimeException(e);
+			}
+		});
+		controller.addSourceFileListener(file -> {
+			showSelectedFileLabel.setToolTipText(file.getAbsolutePath());
+			showSelectedFileLabel.setText(file.getAbsolutePath().replaceFirst(".*[/\\\\]([^/\\\\]+)$", "$1"));
+		});
+
+		controller.addSourceFileListener(file -> messagesProcessor.accept("Открыт файл: [{" + file.getAbsolutePath() + "}]"));
+
+		versionHolder.addValueChangeListener(showExtractedVersionLabel::setText);
+
+		controller.setArgs(args);
 	}
 
-	private void initializeMenu() {
+	@Override
+	public JFrame get() {
+		configureFrame();
+		initializeMenu();
+		alignComponents();
+		return frame;
+	}
+
+	protected void initializeMenu() {
 		final JMenuBar menuBar = new JMenuBar();
 		frame.setJMenuBar(menuBar);
 		{
@@ -162,44 +177,22 @@ public class UpdateVersionWindowBase {
 			{
 				final JMenuItem packMenuItem = new JMenuItem("Pack");
 				viewMenu.add(packMenuItem);
-				packMenuItem.addActionListener(e -> frame.pack());
+				packMenuItem.addActionListener(packAction);
 			}
 
 		}
 	}
 
 	protected void alignComponents() {
-		final Box basePane = Box.createVerticalBox();
-		frame.add(basePane);
-
 		{
 			final List<List<JComponent>> componentsTable = new ArrayList<>();
-			componentsTable.add(Arrays.asList(new JLabel("Имя файла"), decorate(new JLabel("Файл не выбран"), l -> {
-				fileNameUpdater = newText -> {
-					l.setToolTipText(newText);
-					newText = newText.replaceFirst(".*[/\\\\]([^/\\\\]+)$", "$1");
-					l.setText(newText);
-				};
-			})));
-			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"),
-					decorate(new JLabel("Файл не выбран"), l -> versionHolder.addValueChangeListener(l::setText))));
 
-			final JPanel propertyBox = alignWithGroupLayout(componentsTable);
+			componentsTable.add(Arrays.asList(new JLabel("Имя файла"), showSelectedFileLabel));
+			componentsTable.add(Arrays.asList(new JLabel("Текущая версия"), showExtractedVersionLabel));
 
-			frame.add(createLeftFlowLayoutPanel(propertyBox));
-
+			frame.add(createLeftFlowLayoutPanel(alignWithGroupLayout(componentsTable)));
 		}
 		{
-			class ActionButton extends JButton {
-
-				private static final long serialVersionUID = 1L;
-
-				public ActionButton(String label, ActionListener al) {
-					setText(label);
-					addActionListener(al);
-					setHorizontalAlignment(SwingConstants.LEFT);
-				};
-			}
 
 			final List<ActionButton> actionButtons = new ArrayList<>();
 			actionButtons.add(new ActionButton("Увеличить мажорную версию", e -> versionHolder.incrementMajor()));
@@ -217,13 +210,9 @@ public class UpdateVersionWindowBase {
 			frame.add(new JScrollPane(createLeftFlowLayoutPanel(actionsBox)), BorderLayout.WEST);
 		}
 		{
-			final JTextArea jTextArea = new JTextArea(5, 30);
-			frame.add(new JScrollPane(jTextArea), BorderLayout.SOUTH);
-			jTextArea.setEditable(false);
-			messagesProcessor = newMessage -> {
-				jTextArea.append(newMessage);
-				jTextArea.append("\n");
-			};
+
+			frame.add(new JScrollPane(loggingTextArea), BorderLayout.SOUTH);
+			loggingTextArea.setEditable(false);
 		}
 	}
 
@@ -284,16 +273,17 @@ public class UpdateVersionWindowBase {
 		bx.setBorder(BorderFactory.createCompoundBorder(bx.getBorder(), BorderFactory.createEtchedBorder()));
 	}
 
-	private <T> T decorate(T t, Consumer<T> consumer) {
-		consumer.accept(t);
-		return t;
-	}
-
 	private Component addMargin(JComponent jLabel) {
 		final Border border = jLabel.getBorder();
 		final EmptyBorder margin = new EmptyBorder(2, 2, 2, 2);
 		jLabel.setBorder(new CompoundBorder(border, margin));
 		return jLabel;
+	}
+
+	protected void configureFrame() {
+		frame.setTitle("Обновление версии pom.xml");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setBounds(200, 200, 700, 500);
 	}
 
 }

@@ -13,6 +13,7 @@
 		<com.github.type-markup>0.0.2</com.github.type-markup>
 		<fdv.slf4j.logback>0.0.2</fdv.slf4j.logback>
 		<junit.junit.version>4.9</junit.junit.version>
+		<mockito-all.version>1.9.5</mockito-all.version>
 		<maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
 	</properties>
 
@@ -51,6 +52,20 @@
 			<version>${junit.junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>${mockito-all.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.stefanbirkner</groupId>
+			<artifactId>system-rules</artifactId>
+			<version>1.17.0</version>
+		</dependency>
+
 
 	</dependencies>
 
