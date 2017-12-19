@@ -17,7 +17,7 @@ public class UpdateVersionControlleTest extends UpdateVersionControllerTestBase 
 	@Test
 	public void test$argsWithDirectory() {
 
-		model.addSearchDirectoryListener(file -> addMessage("D", file.getAbsolutePath()));
+		model.getSearchDirectoryListeners().register(file -> addMessage("D", file.getAbsolutePath()));
 
 		Mockito.when(fileClassificator.isDirectory(Mockito.any())).thenReturn(true);
 		Mockito.when(fileClassificator.isFile(Mockito.any())).thenReturn(false);
@@ -32,8 +32,8 @@ public class UpdateVersionControlleTest extends UpdateVersionControllerTestBase 
 
 	@Test
 	public void test$argsWithFileName() {
-		model.addSourceFileListener(file -> addMessage("F", file.getAbsolutePath()));
-		model.addSearchDirectoryListener(file -> addMessage("D", file.getAbsolutePath()));
+		model.getSourceFileNameListeners().register(file -> addMessage("F", file.getAbsolutePath()));
+		model.getSearchDirectoryListeners().register(file -> addMessage("D", file.getAbsolutePath()));
 
 		Mockito.when(fileClassificator.isDirectory(Mockito.any())).thenReturn(false);
 		Mockito.when(fileClassificator.isFile(Mockito.any())).thenReturn(true);
@@ -49,7 +49,7 @@ public class UpdateVersionControlleTest extends UpdateVersionControllerTestBase 
 	@Test
 	public void test$simpleFileNameWithCurrentDir() {
 		System.setProperty("user.dir", "g:\\user\\dir");
-		model.addSourceFileListener(file -> addMessage("F", file.getAbsolutePath()));
+		model.getSourceFileNameListeners().register(file -> addMessage("F", file.getAbsolutePath()));
 
 		Mockito.when(fileClassificator.isExists(Mockito.any())).thenReturn(true);
 		Mockito.when(fileClassificator.isFile(Matchers.argThat(new ArgumentMatcher<File>() {
@@ -78,7 +78,7 @@ public class UpdateVersionControlleTest extends UpdateVersionControllerTestBase 
 	public void test$noArgument() {
 		System.setProperty("user.dir", "g:\\other\\dir");
 
-		model.addSearchDirectoryListener(file -> addMessage("D", file.getAbsolutePath()));
+		model.getSearchDirectoryListeners().register(file -> addMessage("D", file.getAbsolutePath()));
 
 		Mockito.when(fileClassificator.isExists(Mockito.any())).thenReturn(true);
 		Mockito.when(fileClassificator.isDirectory(Mockito.any())).thenReturn(true);

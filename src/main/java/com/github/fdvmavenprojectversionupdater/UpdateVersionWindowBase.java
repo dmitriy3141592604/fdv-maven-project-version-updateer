@@ -100,11 +100,11 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 			loggingTextArea.append("\n");
 		};
 
-		controller.addSearchDirectoryListener(file -> fileChooser.setCurrentDirectory(file));
-		controller.addSearchDirectoryListener(file -> logger.info("New search directory: [{}]", file.getAbsolutePath()));
+		controller.getSearchDirectoryListeners().register(file -> fileChooser.setCurrentDirectory(file));
+		controller.getSearchDirectoryListeners().register(file -> logger.info("New search directory: [{}]", file.getAbsolutePath()));
 
-		controller.addSourceFileListener(file -> logger.info("New source file: [{}]", file.getAbsolutePath()));
-		controller.addSourceFileListener(file -> {
+		controller.getSourceFileNameListeners().register(file -> logger.info("New source file: [{}]", file.getAbsolutePath()));
+		controller.getSourceFileNameListeners().register(file -> {
 			try {
 				final NodeListProcessor processor = new NodeListProcessor();
 				processor.registerPrefixToNamespace("mv", "http://maven.apache.org/POM/4.0.0");
@@ -120,12 +120,12 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 				throw new RuntimeException(e);
 			}
 		});
-		controller.addSourceFileListener(file -> {
+		controller.getSourceFileNameListeners().register(file -> {
 			showSelectedFileLabel.setToolTipText(file.getAbsolutePath());
 			showSelectedFileLabel.setText(file.getAbsolutePath().replaceFirst(".*[/\\\\]([^/\\\\]+)$", "$1"));
 		});
 
-		controller.addSourceFileListener(file -> messagesProcessor.accept("Открыт файл: [{" + file.getAbsolutePath() + "}]"));
+		controller.getSourceFileNameListeners().register(file -> messagesProcessor.accept("Открыт файл: [{" + file.getAbsolutePath() + "}]"));
 
 		versionHolder.addValueChangeListener(showExtractedVersionLabel::setText);
 
@@ -150,8 +150,8 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 				menu.add("Exit", exitAction, "control Q");
 			});
 
-			menuBar.add("View", menu -> {
-				menu.add("Pack", packAction, "control shift P");
+			menuBar.add("View", viewMenu -> {
+				viewMenu.add("Pack", packAction, "control shift P");
 			});
 
 		}));
@@ -169,7 +169,7 @@ public class UpdateVersionWindowBase implements Supplier<JFrame> {
 		}
 		{
 
-			final List<ActionButton> actionButtons = new ArrayList<>();
+			final List<JComponent> actionButtons = new ArrayList<>();
 			actionButtons.add(new ActionButton("Увеличить мажорную версию", e -> versionHolder.incrementMajor()));
 			actionButtons.add(new ActionButton("Уменьшить мажорную версию", e -> versionHolder.increment(0, -1)));
 			actionButtons.add(new ActionButton("Увеличить минорную версию", e -> versionHolder.incrementMinor()));
