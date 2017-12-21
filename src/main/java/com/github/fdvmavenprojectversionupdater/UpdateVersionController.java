@@ -35,12 +35,12 @@ public class UpdateVersionController {
 			// nothing
 		} else if (directory) {
 			searchDirectoryListeners.fire(file);
-			logger.info("Process searchDirectory: [{}]", file);
+			logger.debug("Process searchDirectory: [{}]", file);
 		} else if (fileClassificator.isFile(file)) {
 			selectedFile = file;
 			sourceFileListeners.fire(file);
 			searchDirectoryListeners.fire(file.getParentFile());
-			logger.info("Process file: [{}] and searchDirectory: [{}]", file, file.getParentFile());
+			logger.debug("Process file: [{}] and searchDirectory: [{}]", file, file.getParentFile());
 		}
 	}
 
