@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.fdv.borders.MarginBorderDecorator;
+import com.github.fdv.menus.ConfigurableMenuBar;
 import com.github.fdv.models.ComponentsTable;
 import com.github.fdv.panels.ConfigurableLeftFlowLayoutPanel;
 

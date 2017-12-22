@@ -5,29 +5,23 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.slf4j.Logger;
 
+import com.github.fdv.busBasedWindow.SimpleBusEvent;
 import com.github.typemarkup.Behavior;
 
 public class BusTest extends BusTestBase {
 
-	public static class StringEvent {
+	public static class StringEventForTest extends SimpleBusEvent<String> {
 
-		private String value;
-
-		public String getValue() {
-			return value;
-		}
-
-		public final void setValue(String value) {
-			this.value = value;
+		public StringEventForTest(String value) {
+			super(value);
 		}
 	}
 
-	public static class ExtendedStringEvent extends StringEvent {
+	public static class ExtendedStringEventForTest extends StringEventForTest {
 
-		public ExtendedStringEvent(String value) {
-			setValue(value);
+		public ExtendedStringEventForTest(String value) {
+			super(value);
 		}
 	}
 
@@ -36,13 +30,13 @@ public class BusTest extends BusTestBase {
 	public void test$oneSubscriber() {
 		final String topicName = randomString();
 
-		bus.subscribe(topicName, StringEvent.class, (e) -> logMessage("accept: " + e.getValue()));
+		bus.subscribe(topicName, StringEventForTest.class, (e) -> logMessage("accept: " + e.getValue()));
 
 		assertEquals("", callLog());
 
 		final String messageContent = randomString();
 
-		bus.post(topicName, new ExtendedStringEvent(messageContent));
+		bus.post(topicName, new ExtendedStringEventForTest(messageContent));
 
 		assertEquals("MSG:accept: " + messageContent, callLog());
 	}
@@ -55,11 +49,11 @@ public class BusTest extends BusTestBase {
 		final int subscriberCount = 2;
 		for (int i = 0; i < subscriberCount; ++i) {
 			final int ii = i;
-			bus.subscribe(topicName, StringEvent.class, (e) -> logMessage("accept(" + ii + ")" + e.getValue()));
+			bus.subscribe(topicName, StringEventForTest.class, (e) -> logMessage("accept(" + ii + ")" + e.getValue()));
 		}
 
 		final String messageContent = randomString();
-		bus.post(topicName, new ExtendedStringEvent(messageContent));
+		bus.post(topicName, new ExtendedStringEventForTest(messageContent));
 
 		assertEquals("truetruefalse", "" + callLog().contains("accept(0)") + callLog().contains("accept(1)") + callLog().contains("accept(3)"));
 	}
@@ -68,28 +62,30 @@ public class BusTest extends BusTestBase {
 	@Behavior("Для отправки сообщений подписчики не требуются")
 	public void test$noSubscribers() {
 		final String topicName = randomString();
-		bus.post(topicName, new ExtendedStringEvent(randomString()));
+		bus.post(topicName, new ExtendedStringEventForTest(randomString()));
 	}
 
 	@Test
 	@Behavior("При отстутствии подписчиков, генерируется предупреждение")
 	public void test$generateWarningIfNoSubscribersPresent() {
-		final Logger mockLogger = Mockito.mock(Logger.class);
 		final ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-		final ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
-		final ArgumentCaptor<String> eventCaptor = ArgumentCaptor.forClass(String.class);
-		Mockito.doNothing().when(mockLogger).warn(messageCaptor.capture(), topicCaptor.capture(), eventCaptor.capture());
+		final ArgumentCaptor<String> topicNameCaptor = ArgumentCaptor.forClass(String.class);
+		final ArgumentCaptor<String> eventClassCaptor = ArgumentCaptor.forClass(String.class);
+		final ArgumentCaptor<String> eventAsStringCaptor = ArgumentCaptor.forClass(String.class);
+		Mockito.doNothing().when(logger).warn(messageCaptor.capture(), topicNameCaptor.capture(), eventClassCaptor.capture(),
+				eventAsStringCaptor.capture());
 
-		bus.setLogger(mockLogger);
+		// bus.setLogger(mockLogger);
 
 		final String topicName = "tn" + randomString();
 		final String message = "msg" + randomString();
 
-		bus.post(topicName, new ExtendedStringEvent(message));
+		bus.post(topicName, new ExtendedStringEventForTest(message));
 
-		assertEquals("Для топика: [{}] нет получателей. Полученное сообщение: [{}]", messageCaptor.getValue());
-		assertEquals(true, topicCaptor.getValue().contains(topicName));
-		assertEquals(true, eventCaptor.getValue().contains(message));
+		assertEquals("Для топика: [{}] нет получателей. Полученное сообщение: [{}][{}]", messageCaptor.getValue());
+		assertEquals(true, topicNameCaptor.getValue().contains(topicName));
+		assertEquals(true, logValue("eventClass", eventClassCaptor, false).getValue().contains(ExtendedStringEventForTest.class.getSimpleName()));
+		assertEquals(true, eventAsStringCaptor.getValue().contains(message));
 
 	}
 

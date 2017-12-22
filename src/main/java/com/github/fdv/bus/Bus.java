@@ -8,27 +8,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.typemarkup.Responsibility;
-import com.google.gson.Gson;
 
 @Responsibility("Обеспечивает передачу сообщений между объектами, скрывая типы отправителя и получателя.")
 public class Bus {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final Map<String, TypedList<?>> topics = new HashMap<>();
 
 	public <EventType> Bus post(String topicName, EventType event) {
 		final TypedList<?> topicListeners = topics.get(topicName);
 		if (topicListeners == null) {
-			logger.warn("Для топика: [{}] нет получателей. Полученное сообщение: [{}]", topicName, new Gson().toJson(event));
+			// TODO 2017-12-22: Если тут возникает ошибка, то все рушится
+			// TODO 2017-12-22: Вообще сообщене должно уходить в deadqueue
+			final String eventClass = event.getClass().toString();
+			final String eventAsString = String.valueOf(event);
+			logger.warn("Для топика: [{}] нет получателей. Полученное сообщение: [{}][{}]", topicName, eventClass, eventAsString);
 			return this;
 		}
 
-		final Class<?> acceptedEventsBaseTypeClass = topicListeners.getAcceptedEventsBaseTypeClass();
-		final Class<? extends Object> class1 = event.getClass();
-		if (acceptedEventsBaseTypeClass.isAssignableFrom(class1)) {
-			topicListeners.fire(event);
-		}
+		topicListeners.fire(topicName, event);
 		return this;
 	}
 
@@ -36,10 +35,9 @@ public class Bus {
 		TypedList<?> topicListeners = topics.get(topicName);
 		if (topicListeners == null) {
 			topicListeners = new TypedList<T>();
-			topicListeners.setAcceptedEventBaseTypeClass(eventType);
 			topics.put(topicName, topicListeners);
 		}
-		topicListeners.add(consumer);
+		topicListeners.add(topicName, consumer);
 	}
 
 	public void setLogger(Logger logger) {
