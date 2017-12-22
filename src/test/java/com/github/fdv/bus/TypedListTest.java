@@ -147,6 +147,11 @@ public class TypedListTest extends TypedListBase {
 					logMessage(t.getMessage());
 				}
 
+				@Override
+				public void debug(String format, Object... arguments) {
+
+				}
+
 			});
 		}
 

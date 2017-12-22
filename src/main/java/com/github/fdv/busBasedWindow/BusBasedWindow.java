@@ -7,6 +7,8 @@ import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.github.fdv.borders.MarginBorderDecorator;
 import com.github.fdv.bus.Bus;
 import com.github.fdv.labels.ConfigurableLabel;
+import com.github.fdv.layout.BorderLayoutAdapter;
 import com.github.fdv.menus.ConfigurableMenuBar;
 import com.github.fdv.models.ComponentsTable;
 import com.github.fdv.panels.ConfigurableLeftFlowLayoutPanel;
@@ -21,11 +24,12 @@ import com.github.fdvmavenprojectversionupdater.GroupPanelFromComponentsTableBui
 
 public class BusBasedWindow extends JFrame {
 
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
-
 	private static final long serialVersionUID = -3028713956990097930L;
 
+	protected final Logger logger = LoggerFactory.getLogger(getClass());
+
 	public static void main(String... args) {
+
 		final Bus bus = new Bus();
 		new BusBasedWindow(bus).setVisible(true);
 		new BusMessageSender(bus).configure().setVisible(true);
@@ -58,6 +62,8 @@ public class BusBasedWindow extends JFrame {
 	}
 
 	private void buildContent() {
+
+		final BorderLayoutAdapter bla = new BorderLayoutAdapter(this);
 		{
 
 			final TitleBuilder titleBuilder = new TitleBuilder();
@@ -92,7 +98,15 @@ public class BusBasedWindow extends JFrame {
 				bus.subscribe("newPomFileVersion", StringEvent.class, se -> label.setText(se.getText()));
 			}));
 
-			add(align(ct));
+			bla.center(align(ct));
+		}
+		{
+		}
+		{
+			final JTextArea logViewer = new JTextArea(5, 50);
+
+			bla.bottom(add(new JScrollPane(logViewer)));
+
 		}
 	}
 
