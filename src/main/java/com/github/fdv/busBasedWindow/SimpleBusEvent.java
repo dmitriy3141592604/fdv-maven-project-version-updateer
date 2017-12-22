@@ -21,7 +21,7 @@ public class SimpleBusEvent<T> {
 
 	@Override
 	public String toString() {
-		return new StringBuilder().append("[").append(getClass().getName()).append("{ value=\"").append(String.valueOf(value) + "}]").toString();
+		return new StringBuilder().append("[").append(getClass().getName()).append("{ value=\"").append(String.valueOf(value) + "\"}]").toString();
 	}
 
 }

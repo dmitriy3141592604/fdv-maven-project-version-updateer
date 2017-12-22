@@ -1,24 +1,76 @@
-<configuration>
+<configuration debug="false">
+	<!-- http://saltnlight5.blogspot.ru/2013/08/how-to-configure-slf4j-with-different.html -->
+	<!-- https://logback.qos.ch/manual/appenders.html -->
+	<!-- Таблица с кодами pattern https://logback.qos.ch/manual/layouts.html -->
 
-	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+	<!--
+		<property resource="resource1.properties" />
+	-->
+
+	<!--
+		// MAYBE: <configuration debug="true">
+		<if condition='property("HOSTNAME").contains("torino")'>
+		<then>
+		<appender name="CON" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
-			<pattern>%-20logger{0} %msg%n</pattern>
+		<pattern>%d %-5level %logger{35} - %msg %n</pattern>
+		</encoder>
+		</appender>
+		<root>
+		<appender-ref ref="CON" />
+		</root>
+		</then>
+		</if>
+	-->
+
+	<!--
+		<include file="src/main/java/chapters/configuration/includedConfig.xml"/>
+		includedFileSample:
+		<included>
+		<appender name="includedConsole" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+		<pattern>"%d - %m%n"</pattern>
+		</encoder>
+		</appender>
+		</included>
+		####
+		<include resource="includedConfig.xml"/>
+		####
+		<include url="http://some.host.com/includedConfig.xml"/>
+		####
+		<include optional="true" ..../>
+	-->
+
+	<appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%-5level %-20logger{0} %msg%n</pattern>
 		</encoder>
 	</appender>
 
-	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
-		<file>project-debug-log.log</file>
+	<appender name="debug-file" class="ch.qos.logback.core.FileAppender">
+		<file>logs/debug-log.log</file>
 		<append>false</append>
 		<encoder>
 			<pattern>%d{HH:mm:ss.SSS+Z} [%thread] %-5level %logger - %msg%n</pattern>
 		</encoder>
 	</appender>
 
-	<logger name="RegistrableNamespaceContext" level="INFO">
-		<appender-ref ref="FILE" />
+	<appender name="error-file" class="ch.qos.logback.core.FileAppender">
+		<file>logs/error-log.log</file>
+		<append>false</append>
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS+Z} [%thread] %-5level %logger - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="com.github" level="DEBUG" additivity="false">
+		<appender-ref ref="stdout" />
+		<appender-ref ref="debug-file" />
 	</logger>
 
-	<root level="INFO">
-		<appender-ref ref="STDOUT" />
+	<root level="ERROR">
+		<appender-ref ref="stdout" />
+		<appender-ref ref="error-file" />
 	</root>
+
 </configuration>

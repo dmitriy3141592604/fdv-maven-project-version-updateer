@@ -47,7 +47,7 @@ public class BusMessageSender extends JFrame {
 				@Override
 				public void componentMoved(ComponentEvent e) {
 					super.componentMoved(e);
-					logger.warn("Moved: {}", e.getComponent().getBounds());
+					logger.debug("Moved: {}", e.getComponent().getBounds());
 				}
 
 			}
